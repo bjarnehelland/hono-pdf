@@ -109,7 +109,7 @@ app.get("/report", (c) => {
     return c.text("Data not found", 404);
   }
 
-  console.log(data);
+  
   return c.html(<Top messages={["Hello", ""]} incomes={data.incomes || []} />);
 });
 
