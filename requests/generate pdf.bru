@@ -1,0 +1,26 @@
+meta {
+  name: generate pdf
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3000/pdf
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "flowId": "123",
+    "data": {
+      "incomes": [
+        {
+          "owner": "X",
+          "value": 800000,
+          "type": "SALARY"
+        }
+      ]
+    }
+  }
+}

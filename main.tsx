@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import type { FC } from "hono/jsx";
-import puppeteer from "puppeteer";
+import { chromium as playwright } from "playwright";
 
 const app = new Hono();
+
+const temporaryDataStore = new Map();
 
 const Layout: FC = (props) => {
   return (
@@ -17,7 +19,7 @@ const Layout: FC = (props) => {
   );
 };
 
-const Top: FC<{ messages: string[] }> = (props: { messages: string[] }) => {
+const Top: FC<{ messages: string[]; incomes: Income[] }> = (props) => {
   return (
     <Layout>
       <h1>Hello fdsjklfds!</h1>
@@ -26,22 +28,63 @@ const Top: FC<{ messages: string[] }> = (props: { messages: string[] }) => {
           return <li class="bg-red-500">{message}!!</li>;
         })}
       </ul>
+      <Incomes incomes={props.incomes} />
     </Layout>
   );
 };
 
-app.post("/pdf", async (c) => {
-  const { msg } = await c.req.query();
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
+interface Income {
+  owner: string;
+  value: number;
+  type: "SALARY" | "PENSION";
+}
 
-  // Navigate the page to a URL
-  await page.goto(`http://localhost:3000/report?msg=${msg}`, {
-    waitUntil: "networkidle0", // Wait until the network is idle
+const Incomes: FC<{ incomes: Income[] }> = (props: { incomes: Income[] }) => {
+  return (
+    <div className="p-6 max-w-2xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">Incomes</h2>
+      <table className="min-w-full bg-white">
+        <thead>
+          <tr>
+            <th className="py-2">Owner</th>
+            <th className="py-2">Type</th>
+            <th className="py-2">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.incomes.map((income) => (
+            <tr className="hover:bg-gray-100">
+              <td className="border px-4 py-2">{income.owner}</td>
+              <td className="border px-4 py-2">{income.type}</td>
+              <td className="border px-4 py-2">${income.value.toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+app.post("/pdf", async (c) => {
+  const { data, flowId } = await c.req.json();
+
+  // TODO: should we validate input?
+  temporaryDataStore.set(flowId, data);
+
+  // TODO: maybe we should cleanup temporary storage after some time in case /report endpoint fails?
+
+  const browser = await playwright.launch({
+    headless: true,
+  });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(`http://localhost:3000/report?id=${flowId}`, {
+    waitUntil: "networkidle",
   });
 
   // Generate PDF
-  const pdf = await page.pdf({
+  const pdfBuffer = await page.pdf({
     format: "A4",
     printBackground: true,
   });
@@ -53,12 +96,19 @@ app.post("/pdf", async (c) => {
   c.header("Content-Type", "application/pdf");
   c.header("Content-Disposition", "attachment; filename=report.pdf");
 
-  return c.body(pdf);
+  // return new Response(pdfBuffer);
+  return c.body(pdfBuffer);
 });
 
 app.get("/report", (c) => {
-  const { msg } = c.req.query();
-  return c.html(<Top messages={["Hello", msg]} />);
+  const { id } = c.req.query();
+  const data = temporaryDataStore.get(id);
+  if (!data) {
+    return c.text("Data not found", 404);
+  }
+
+  console.log(data);
+  return c.html(<Top messages={["Hello", ""]} incomes={data.incomes || []} />);
 });
 
 export default app;
