@@ -39,7 +39,7 @@ interface Income {
   type: "SALARY" | "PENSION";
 }
 
-const Incomes: FC<{ incomes: Income[] }> = (props: { incomes: Income[] }) => {
+const Incomes: FC<{ incomes: Income[] }> = (props) => {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-gray-800">Incomes</h2>
@@ -56,7 +56,9 @@ const Incomes: FC<{ incomes: Income[] }> = (props: { incomes: Income[] }) => {
             <tr className="hover:bg-gray-100">
               <td className="border px-4 py-2">{income.owner}</td>
               <td className="border px-4 py-2">{income.type}</td>
-              <td className="border px-4 py-2">${income.value.toLocaleString()}</td>
+              <td className="border px-4 py-2">
+                ${income.value.toLocaleString()}
+              </td>
             </tr>
           ))}
         </tbody>
