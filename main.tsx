@@ -108,8 +108,8 @@ app.get("/report", (c) => {
   if (!data) {
     return c.text("Data not found", 404);
   }
+  temporaryDataStore.delete(id);
 
-  
   return c.html(<Top messages={["Hello", ""]} incomes={data.incomes || []} />);
 });
 
