@@ -68,10 +68,11 @@ const Incomes: FC<{ incomes: Income[] }> = (props) => {
 };
 
 app.post("/pdf", async (c) => {
-  const { data, flowId } = await c.req.json();
-
+  const { data } = await c.req.json();
   // TODO: should we validate input?
-  temporaryDataStore.set(flowId, data);
+
+  const id = crypto.randomUUID();
+  temporaryDataStore.set(id, data);
 
   // TODO: maybe we should cleanup temporary storage after some time in case /report endpoint fails?
 
@@ -81,7 +82,7 @@ app.post("/pdf", async (c) => {
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto(`http://localhost:3000/report?id=${flowId}`, {
+  await page.goto(`http://localhost:3000/report?id=${id}`, {
     waitUntil: "networkidle",
   });
 
